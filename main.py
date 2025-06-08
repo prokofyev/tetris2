@@ -226,41 +226,43 @@ class Tetris:
         player.current_piece_idx += 1
         if player.current_piece_idx >= len(self.piece_sequence):
             self.piece_sequence.extend(self.generate_piece_sequence(100))
-        player.current_piece = self.get_new_current_piece(player)
+        player.current_piece = self.get_new_current_piece(player) 
 
-    def draw_grid(self):
+    def draw_grid(self, player):
         """Рисует игровую сетку"""
         for x in range(GRID_WIDTH):
             for y in range(GRID_HEIGHT):
                 pygame.draw.rect(screen, GRAY, 
-                            (GAME_AREA_LEFT + x * BLOCK_SIZE, y * BLOCK_SIZE, 
-                                BLOCK_SIZE, BLOCK_SIZE), 1)
+                    (player.grid_offset + x * BLOCK_SIZE, y * BLOCK_SIZE, 
+                     BLOCK_SIZE, BLOCK_SIZE), 1)
 
-    def draw_locked_pieces(self):
+    def draw_locked_pieces(self, player):
         """Рисует уже зафиксированные фигуры"""
         for y in range(GRID_HEIGHT):
             for x in range(GRID_WIDTH):
-                if self.grid[y][x]:
-                    pygame.draw.rect(screen, self.grid[y][x], 
-                                (GAME_AREA_LEFT + x * BLOCK_SIZE, y * BLOCK_SIZE, 
-                                    BLOCK_SIZE, BLOCK_SIZE))
+                if player.grid[y][x]:
+                    pygame.draw.rect(screen, player.grid[y][x],
+                        (player.grid_offset + x * BLOCK_SIZE, y * BLOCK_SIZE,
+                         BLOCK_SIZE, BLOCK_SIZE))
                     pygame.draw.rect(screen, WHITE, 
-                                (GAME_AREA_LEFT + x * BLOCK_SIZE, y * BLOCK_SIZE, 
+                                (player.grid_offset +  + x * BLOCK_SIZE, y * BLOCK_SIZE, 
                                     BLOCK_SIZE, BLOCK_SIZE), 1)
-
-    def draw_current_piece(self):
+        
+    def draw_current_piece(self, player):
         """Рисует текущую падающую фигуру"""
-        for y, row in enumerate(self.current_piece["shape"]):
-            for x, cell in enumerate(row):
-                if cell:
-                    pygame.draw.rect(screen, self.current_piece["color"], 
-                                (GAME_AREA_LEFT + (self.current_piece["x"] + x) * BLOCK_SIZE, 
-                                    (self.current_piece["y"] + y) * BLOCK_SIZE, 
-                                    BLOCK_SIZE, BLOCK_SIZE))
-                    pygame.draw.rect(screen, WHITE, 
-                                (GAME_AREA_LEFT + (self.current_piece["x"] + x) * BLOCK_SIZE, 
-                                    (self.current_piece["y"] + y) * BLOCK_SIZE, 
-                                    BLOCK_SIZE, BLOCK_SIZE), 1)
+        if not player.game_over:
+            current_piece = player.current_piece
+            for y, row in enumerate(current_piece["shape"]):
+                for x, cell in enumerate(row):
+                    if cell:
+                        pygame.draw.rect(screen, current_piece["color"],
+                            (player.grid_offset + (current_piece["x"] + x) * BLOCK_SIZE,
+                                (current_piece["y"] + y) * BLOCK_SIZE,
+                                BLOCK_SIZE, BLOCK_SIZE))
+                        pygame.draw.rect(screen, WHITE, 
+                                    (player.grid_offset + (current_piece["x"] + x) * BLOCK_SIZE, 
+                                        (current_piece["y"] + y) * BLOCK_SIZE, 
+                                        BLOCK_SIZE, BLOCK_SIZE), 1)
 
     def draw_score_info(self):
         """Рисует информацию о счете и уровне"""
@@ -296,11 +298,17 @@ class Tetris:
         overlay.fill((0, 0, 0, 180))
         screen.blit(overlay, (0, 0))
         
+        if self.left_player.game_over and self.right_player.game_over:
+                message = "НИЧЬЯ"
+        else:
+            winner = "ПРАВЫЙ" if self.left_player.game_over else "ЛЕВЫЙ"
+            message = f"{winner} ИГРОК ПОБЕДИЛ"
         game_over_font = pygame.font.SysFont(None, 64)  # Увеличили размер шрифта
-        game_over_text = game_over_font.render("ИГРА ОКОНЧЕНА", True, WHITE)  # Без восклицательного знака
-        screen.blit(game_over_text, (SCREEN_WIDTH // 2 - game_over_text.get_width() // 2, 
-                                    SCREEN_HEIGHT // 2 - 100))  # Подняли выше
-        
+        message_text = game_over_font.render(message, True, WHITE)
+        screen.blit(message_text, 
+            (SCREEN_WIDTH // 2 - message_text.get_width() // 2, 
+                SCREEN_HEIGHT // 2 - message_text.get_height() // 2 - 100))
+
         restart_font = pygame.font.SysFont(None, 36)
         restart_text = restart_font.render("Пробел - новая игра", True, WHITE)
         quit_text = restart_font.render("ESC - выход", True, WHITE)
@@ -314,8 +322,12 @@ class Tetris:
         screen.fill(BLACK)
         
         # Рисуем стаканы и фигуры
-        self.draw_player_grid(self.left_player)
-        self.draw_player_grid(self.right_player)
+        self.draw_grid(self.left_player)
+        self.draw_locked_pieces(self.left_player)
+        self.draw_current_piece(self.left_player)
+        self.draw_grid(self.right_player)
+        self.draw_locked_pieces(self.right_player)
+        self.draw_current_piece(self.right_player)
         
         # Рисуем счет
         font = pygame.font.SysFont(None, 36)
@@ -324,38 +336,10 @@ class Tetris:
         
         # Рисуем сообщение о победителе
         if self.state == GameState.GAME_OVER:
-            winner = "Правый" if self.left_player.game_over else "Левый"
-            message = f"{winner} игрок победил!"
-            message_text = font.render(message, True, WHITE)
-            screen.blit(message_text, 
-                (SCREEN_WIDTH // 2 - message_text.get_width() // 2, 
-                 SCREEN_HEIGHT // 2 - message_text.get_height() // 2))
+            self.draw_game_over_screen()
 
-    def draw_player_grid(self, player):
-        # Рисуем сетку
-        for x in range(GRID_WIDTH):
-            for y in range(GRID_HEIGHT):
-                pygame.draw.rect(screen, GRAY, 
-                    (player.grid_offset + x * BLOCK_SIZE, y * BLOCK_SIZE, 
-                     BLOCK_SIZE, BLOCK_SIZE), 1)
-        
-        # Рисуем зафиксированные фигуры
-        for y in range(GRID_HEIGHT):
-            for x in range(GRID_WIDTH):
-                if player.grid[y][x]:
-                    pygame.draw.rect(screen, player.grid[y][x],
-                        (player.grid_offset + x * BLOCK_SIZE, y * BLOCK_SIZE,
-                         BLOCK_SIZE, BLOCK_SIZE))
-        
-        # Рисуем текущую фигуру
-        current_piece = player.current_piece
-        for y, row in enumerate(current_piece["shape"]):
-            for x, cell in enumerate(row):
-                if cell:
-                    pygame.draw.rect(screen, current_piece["color"],
-                        (player.grid_offset + (current_piece["x"] + x) * BLOCK_SIZE,
-                            (current_piece["y"] + y) * BLOCK_SIZE,
-                            BLOCK_SIZE, BLOCK_SIZE))
+        if self.state == GameState.PAUSED:
+            self.draw_pause_screen()
 
     def move_piece(self, player, x_offset, y_offset):
         """Перемещает текущую фигуру игрока"""
@@ -415,7 +399,7 @@ def handle_key_events(game, event):
         return handle_gameplay_keys(game, event)
     elif game.state == GameState.PAUSED:
         return handle_pause_keys(game, event)
-    else:  # GAME_OVER
+    elif game.state == GameState.GAME_OVER:
         return handle_gameover_keys(game, event)
 
 def handle_gameplay_keys(game, event):
@@ -446,7 +430,7 @@ def handle_gameplay_keys(game, event):
         elif event.key == game.right_player.controls.drop:
             game.drop_piece(game.right_player)
     
-    elif event.key == pygame.K_ESCAPE:
+    if event.key == pygame.K_ESCAPE:
         game.state = GameState.PAUSED
     return True
 
