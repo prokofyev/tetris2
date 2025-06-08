@@ -270,6 +270,29 @@ class Tetris:
             self.draw_pause_screen()
         elif self.state == GameState.GAME_OVER:
             self.draw_game_over_screen()
+
+    def move_left(self):
+        """Перемещает фигуру влево, если это возможно"""
+        if self.valid_move(self.current_piece, -1, 0):
+            self.current_piece["x"] -= 1
+    
+    def move_right(self):
+        """Перемещает фигуру вправо, если это возможно"""
+        if self.valid_move(self.current_piece, 1, 0):
+            self.current_piece["x"] += 1
+    
+    def move_down(self):
+        """Перемещает фигуру вниз, если это возможно"""
+        if self.valid_move(self.current_piece, 0, 1):
+            self.current_piece["y"] += 1
+            return True
+        return False
+    
+    def drop(self):
+        """Мгновенно опускает фигуру вниз"""
+        while self.move_down():
+            pass
+        self.lock_piece()
             
 def handle_game_events(game):
     """Обработка событий игры"""
@@ -284,10 +307,6 @@ def handle_game_events(game):
 
 def handle_key_events(game, event):
     """Обработка нажатий клавиш"""
-    # Выход из игры
-    if event.key == pygame.K_ESCAPE and game.state == GameState.GAME_OVER:
-        return False
-    
     # Управление в зависимости от состояния игры
     if game.state == GameState.PLAYING:
         return handle_gameplay_keys(game, event)
@@ -298,18 +317,16 @@ def handle_key_events(game, event):
 
 def handle_gameplay_keys(game, event):
     """Обработка клавиш во время игры"""
-    if event.key == pygame.K_LEFT and game.valid_move(game.current_piece, -1, 0):
-        game.current_piece["x"] -= 1
-    elif event.key == pygame.K_RIGHT and game.valid_move(game.current_piece, 1, 0):
-        game.current_piece["x"] += 1
-    elif event.key == pygame.K_DOWN and game.valid_move(game.current_piece, 0, 1):
-        game.current_piece["y"] += 1
+    if event.key == pygame.K_LEFT:
+        game.move_left()
+    elif event.key == pygame.K_RIGHT:
+        game.move_right()
+    elif event.key == pygame.K_DOWN:
+        game.move_down()
     elif event.key == pygame.K_UP:
         game.rotate_piece()
     elif event.key == pygame.K_SPACE:
-        while game.valid_move(game.current_piece, 0, 1):
-            game.current_piece["y"] += 1
-        game.lock_piece()
+        game.drop()
     elif event.key == pygame.K_ESCAPE:
         game.state = GameState.PAUSED
     return True
