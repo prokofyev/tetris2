@@ -1,5 +1,6 @@
 import pygame
 import random
+from enum import Enum
 
 # Инициализация pygame
 pygame.init()
@@ -50,6 +51,12 @@ SHAPES = [
      [0, 1, 1]]      # Z
 ]
 
+# Состояния игры
+class GameState(Enum):
+    PLAYING = 1
+    PAUSED = 2
+    GAME_OVER = 3
+
 # Создание экрана
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Тетрис")
@@ -64,8 +71,7 @@ class Tetris:
     def reset_game(self):
         self.grid = [[0 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
         self.current_piece = self.new_piece()
-        self.game_over = False
-        self.paused = False
+        self.state = GameState.PLAYING
         self.score = 0
         self.level = 1
         self.fall_speed = 0.5
@@ -120,18 +126,6 @@ class Tetris:
         self.current_piece["x"], self.current_piece["y"] = old_x, old_y
         return False        
         
-    def lock_piece(self):
-        for y, row in enumerate(self.current_piece["shape"]):
-            for x, cell in enumerate(row):
-                if cell:
-                    self.grid[self.current_piece["y"] + y][self.current_piece["x"] + x] = self.current_piece["color"]
-        
-        self.clear_lines()
-        self.current_piece = self.new_piece()
-        
-        if not self.valid_move(self.current_piece):
-            self.game_over = True
-    
     def clear_lines(self):
         lines_cleared = 0
         for y in range(GRID_HEIGHT):
@@ -154,7 +148,7 @@ class Tetris:
         self.fall_speed = max(0.05, 0.5 - (self.level - 1) * 0.05)
     
     def update(self, delta_time):
-        if self.game_over or self.paused:
+        if self.state != GameState.PLAYING:
             return
         
         self.fall_time += delta_time
@@ -165,6 +159,18 @@ class Tetris:
                 self.current_piece["y"] += 1
             else:
                 self.lock_piece()
+    
+    def lock_piece(self):
+        for y, row in enumerate(self.current_piece["shape"]):
+            for x, cell in enumerate(row):
+                if cell:
+                    self.grid[self.current_piece["y"] + y][self.current_piece["x"] + x] = self.current_piece["color"]
+        
+        self.clear_lines()
+        self.current_piece = self.new_piece()
+        
+        if not self.valid_move(self.current_piece):
+            self.state = GameState.GAME_OVER
     
     def draw_grid(self):
         """Рисует игровую сетку"""
@@ -188,18 +194,17 @@ class Tetris:
 
     def draw_current_piece(self):
         """Рисует текущую падающую фигуру"""
-        if not self.game_over and not self.paused:
-            for y, row in enumerate(self.current_piece["shape"]):
-                for x, cell in enumerate(row):
-                    if cell:
-                        pygame.draw.rect(screen, self.current_piece["color"], 
-                                    (GAME_AREA_LEFT + (self.current_piece["x"] + x) * BLOCK_SIZE, 
-                                        (self.current_piece["y"] + y) * BLOCK_SIZE, 
-                                        BLOCK_SIZE, BLOCK_SIZE))
-                        pygame.draw.rect(screen, WHITE, 
-                                    (GAME_AREA_LEFT + (self.current_piece["x"] + x) * BLOCK_SIZE, 
-                                        (self.current_piece["y"] + y) * BLOCK_SIZE, 
-                                        BLOCK_SIZE, BLOCK_SIZE), 1)
+        for y, row in enumerate(self.current_piece["shape"]):
+            for x, cell in enumerate(row):
+                if cell:
+                    pygame.draw.rect(screen, self.current_piece["color"], 
+                                (GAME_AREA_LEFT + (self.current_piece["x"] + x) * BLOCK_SIZE, 
+                                    (self.current_piece["y"] + y) * BLOCK_SIZE, 
+                                    BLOCK_SIZE, BLOCK_SIZE))
+                    pygame.draw.rect(screen, WHITE, 
+                                (GAME_AREA_LEFT + (self.current_piece["x"] + x) * BLOCK_SIZE, 
+                                    (self.current_piece["y"] + y) * BLOCK_SIZE, 
+                                    BLOCK_SIZE, BLOCK_SIZE), 1)
 
     def draw_score_info(self):
         """Рисует информацию о счете и уровне"""
@@ -256,13 +261,14 @@ class Tetris:
         # Рисуем основные элементы игры
         self.draw_grid()
         self.draw_locked_pieces()
-        self.draw_current_piece()
+        if self.state == GameState.PLAYING:
+            self.draw_current_piece()
         self.draw_score_info()
         
-        # Рисуем специальные экраны
-        if self.paused:
+        # Рисуем специальные экраны в зависимости от состояния
+        if self.state == GameState.PAUSED:
             self.draw_pause_screen()
-        elif self.game_over:
+        elif self.state == GameState.GAME_OVER:
             self.draw_game_over_screen()
             
 def handle_game_events(game):
@@ -279,20 +285,16 @@ def handle_game_events(game):
 def handle_key_events(game, event):
     """Обработка нажатий клавиш"""
     # Выход из игры
-    if event.key == pygame.K_ESCAPE and game.game_over:
+    if event.key == pygame.K_ESCAPE and game.state == GameState.GAME_OVER:
         return False
     
-    # Управление во время игры
-    if not game.game_over and not game.paused:
-        handle_gameplay_keys(game, event)
-    # Управление в меню паузы
-    elif game.paused:
+    # Управление в зависимости от состояния игры
+    if game.state == GameState.PLAYING:
+        return handle_gameplay_keys(game, event)
+    elif game.state == GameState.PAUSED:
         return handle_pause_keys(game, event)
-    # Управление после game over
-    else:
+    else:  # GAME_OVER
         return handle_gameover_keys(game, event)
-    
-    return True
 
 def handle_gameplay_keys(game, event):
     """Обработка клавиш во время игры"""
@@ -309,12 +311,13 @@ def handle_gameplay_keys(game, event):
             game.current_piece["y"] += 1
         game.lock_piece()
     elif event.key == pygame.K_ESCAPE:
-        game.paused = True
+        game.state = GameState.PAUSED
+    return True
 
 def handle_pause_keys(game, event):
     """Обработка клавиш в меню паузы"""
     if event.key == pygame.K_ESCAPE:
-        game.paused = False
+        game.state = GameState.PLAYING
         return True
     elif event.key == pygame.K_SPACE:
         return False  # Выход из игры
