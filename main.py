@@ -24,11 +24,12 @@ COLORS = [
 BLOCK_SIZE = 30
 GRID_WIDTH = 10
 GRID_HEIGHT = 20
-GAP_BETWEEN_GRIDS = 4  # Расстояние между стаканами
-SCREEN_WIDTH = BLOCK_SIZE * (GRID_WIDTH * 2 + GAP_BETWEEN_GRIDS)
-SCREEN_HEIGHT = BLOCK_SIZE * GRID_HEIGHT
-LEFT_GRID_OFFSET = 0
-RIGHT_GRID_OFFSET = BLOCK_SIZE * (GRID_WIDTH + GAP_BETWEEN_GRIDS)
+GAP_BETWEEN_GRIDS = 7  # Расстояние между стаканами
+Y_GRID_MARGIN = 1
+LEFT_GRID_OFFSET = 1
+RIGHT_GRID_OFFSET = LEFT_GRID_OFFSET + GRID_WIDTH + GAP_BETWEEN_GRIDS
+SCREEN_WIDTH = BLOCK_SIZE * (LEFT_GRID_OFFSET * 2 + GRID_WIDTH * 2 + GAP_BETWEEN_GRIDS)
+SCREEN_HEIGHT = BLOCK_SIZE * (GRID_HEIGHT + Y_GRID_MARGIN * 2)
 GAME_OVER_MESSAGE_DURATION = 3000  # 3 секунды в миллисекундах
 
 # Фигуры тетрамино
@@ -252,7 +253,7 @@ class Tetris:
         for x in range(GRID_WIDTH):
             for y in range(GRID_HEIGHT):
                 pygame.draw.rect(screen, GRAY, 
-                    (player.grid_offset + x * BLOCK_SIZE, y * BLOCK_SIZE, 
+                    ((player.grid_offset + x) * BLOCK_SIZE, (y + Y_GRID_MARGIN) * BLOCK_SIZE, 
                      BLOCK_SIZE, BLOCK_SIZE), 1)
 
     def draw_locked_pieces(self, player):
@@ -261,10 +262,10 @@ class Tetris:
             for x in range(GRID_WIDTH):
                 if player.grid[y][x]:
                     pygame.draw.rect(screen, player.grid[y][x],
-                        (player.grid_offset + x * BLOCK_SIZE, y * BLOCK_SIZE,
+                        ((player.grid_offset + x) * BLOCK_SIZE, (y + Y_GRID_MARGIN) * BLOCK_SIZE,
                          BLOCK_SIZE, BLOCK_SIZE))
                     pygame.draw.rect(screen, WHITE, 
-                                (player.grid_offset +  + x * BLOCK_SIZE, y * BLOCK_SIZE, 
+                                ((player.grid_offset + x) * BLOCK_SIZE, (y + Y_GRID_MARGIN) * BLOCK_SIZE, 
                                     BLOCK_SIZE, BLOCK_SIZE), 1)
         
     def draw_current_piece(self, player):
@@ -275,12 +276,12 @@ class Tetris:
                 for x, cell in enumerate(row):
                     if cell:
                         pygame.draw.rect(screen, current_piece["color"],
-                            (player.grid_offset + (current_piece["x"] + x) * BLOCK_SIZE,
-                                (current_piece["y"] + y) * BLOCK_SIZE,
+                            ((player.grid_offset + current_piece["x"] + x) * BLOCK_SIZE,
+                                (Y_GRID_MARGIN + current_piece["y"] + y) * BLOCK_SIZE,
                                 BLOCK_SIZE, BLOCK_SIZE))
                         pygame.draw.rect(screen, WHITE, 
-                                    (player.grid_offset + (current_piece["x"] + x) * BLOCK_SIZE, 
-                                        (current_piece["y"] + y) * BLOCK_SIZE, 
+                                    ((player.grid_offset + current_piece["x"] + x) * BLOCK_SIZE, 
+                                        (Y_GRID_MARGIN + current_piece["y"] + y) * BLOCK_SIZE, 
                                         BLOCK_SIZE, BLOCK_SIZE), 1)
 
     def draw_score_info(self):
