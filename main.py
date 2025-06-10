@@ -169,11 +169,30 @@ class Tetris:
         return False  
         
     def clear_lines(self, player):
+        other_player = self.left_player if player == self.right_player else self.right_player
+        lines_to_transfer = 0
+        
+        # Находим заполненные строки
         for y in range(GRID_HEIGHT):
-            if all(player.grid[y]):
+            if all(player.grid[y]) and player.grid[y][0] != GRAY:
+                # Сохраняем строку для передачи
+                lines_to_transfer += 1
+                # Сдвигаем строки вниз
                 for y2 in range(y, 0, -1):
                     player.grid[y2] = player.grid[y2-1][:]
                 player.grid[0] = [0 for _ in range(GRID_WIDTH)]
+        
+        # Добавляем серые строки другому игроку
+        if lines_to_transfer > 0:
+            # Сдвигаем существующие строки вверх
+            for _ in range(lines_to_transfer):
+                for y in range(0, GRID_HEIGHT - 1):
+                    other_player.grid[y] = other_player.grid[y + 1][:]
+            
+            # Добавляем серые строки внизу
+            for i  in range(lines_to_transfer):
+                y = GRID_HEIGHT - lines_to_transfer + i
+                other_player.grid[y] = [GRAY for _ in range(GRID_WIDTH)]  # 8 - код для серого цвета
     
     def update(self, delta_time):
         if self.state != GameState.PLAYING:
