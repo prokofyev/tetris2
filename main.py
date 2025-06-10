@@ -330,13 +330,10 @@ class Tetris:
                 SCREEN_HEIGHT // 2 - message_text.get_height() // 2 - 100))
 
         restart_font = pygame.font.SysFont(None, 36)
-        restart_text = restart_font.render("Пробел - новая игра", True, WHITE)
         quit_text = restart_font.render("ESC - выход", True, WHITE)
         
-        screen.blit(restart_text, (SCREEN_WIDTH // 2 - restart_text.get_width() // 2, 
-                                SCREEN_HEIGHT // 2 - 10))
         screen.blit(quit_text, (SCREEN_WIDTH // 2 - quit_text.get_width() // 2, 
-                            SCREEN_HEIGHT // 2 + 30))
+                            SCREEN_HEIGHT // 2 - 10))
 
     def draw(self):
         screen.fill(BLACK)
@@ -465,10 +462,7 @@ def handle_pause_keys(game, event):
 
 def handle_gameover_keys(game, event):
     """Обработка клавиш после game over"""
-    if event.key == pygame.K_SPACE:
-        game.reset_game()
-        return True
-    elif event.key == pygame.K_ESCAPE:
+    if event.key == pygame.K_ESCAPE:
         return False  # Выход из игры
     return True
 
