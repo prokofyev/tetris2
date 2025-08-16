@@ -197,6 +197,8 @@ class Tetris:
             for i  in range(lines_to_transfer):
                 y = GRID_HEIGHT - lines_to_transfer + i
                 other_player.grid[y] = [GRAY for _ in range(GRID_WIDTH)]  # 8 - код для серого цвета
+            
+            other_player.current_piece["y"] -= 1
     
     def update(self, delta_time):
         if self.state != GameState.PLAYING:
