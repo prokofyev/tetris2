@@ -21,16 +21,16 @@ COLORS = [
 ]
 
 # Настройки игры
-BLOCK_SIZE = 30
+BLOCK_SIZE = 45
 GRID_WIDTH = 10
 GRID_HEIGHT = 20
-GAP_BETWEEN_GRIDS = 7  # Расстояние между стаканами
-Y_GRID_MARGIN = 1
-LEFT_GRID_OFFSET = 1
+GAP_BETWEEN_GRIDS = 6  # Расстояние между стаканами
+Y_GRID_MARGIN = 2
+LEFT_GRID_OFFSET = 7
 RIGHT_GRID_OFFSET = LEFT_GRID_OFFSET + GRID_WIDTH + GAP_BETWEEN_GRIDS
-SCREEN_WIDTH = BLOCK_SIZE * (LEFT_GRID_OFFSET * 2 + GRID_WIDTH * 2 + GAP_BETWEEN_GRIDS)
-SCREEN_HEIGHT = BLOCK_SIZE * (GRID_HEIGHT + Y_GRID_MARGIN * 2)
 GAME_OVER_MESSAGE_DURATION = 3000  # 3 секунды в миллисекундах
+SCORE_FONT_SIZE = 50
+MESSAGE_FONT_SIZE = 80
 
 # Фигуры тетрамино
 SHAPES = [
@@ -61,9 +61,12 @@ class GameState(Enum):
     PAUSED = 2
     GAME_OVER = 3
 
-# Создание экрана
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+# Создание экрана в полноэкранном режиме
+screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 pygame.display.set_caption("Тетрис")
+
+# Получаем размеры экрана для полноэкранного режима
+SCREEN_WIDTH, SCREEN_HEIGHT = screen.get_size()
 
 # Часы для управления FPS
 clock = pygame.time.Clock()
@@ -284,26 +287,18 @@ class Tetris:
                                         (Y_GRID_MARGIN + current_piece["y"] + y) * BLOCK_SIZE, 
                                         BLOCK_SIZE, BLOCK_SIZE), 1)
 
-    def draw_score_info(self):
-        """Рисует информацию о счете и уровне"""
-        font = pygame.font.SysFont(None, 36)
-        score_text = font.render(f"Счет: {self.score}", True, WHITE)
-        level_text = font.render(f"Уровень: {self.level}", True, WHITE)
-        screen.blit(score_text, (GAME_AREA_LEFT + GRID_WIDTH * BLOCK_SIZE + 10, 30))
-        screen.blit(level_text, (GAME_AREA_LEFT + GRID_WIDTH * BLOCK_SIZE + 10, 70))
-
     def draw_pause_screen(self):
         """Рисует экран паузы"""
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 180))
         screen.blit(overlay, (0, 0))
         
-        pause_font = pygame.font.SysFont(None, 64)  # Увеличили размер шрифта
+        pause_font = pygame.font.SysFont(None, MESSAGE_FONT_SIZE)  # Увеличили размер шрифта
         pause_text = pause_font.render("ПАУЗА", True, WHITE)
         screen.blit(pause_text, (SCREEN_WIDTH // 2 - pause_text.get_width() // 2, 
                                 SCREEN_HEIGHT // 2 - 100))  # Подняли ещё выше
         
-        restart_font = pygame.font.SysFont(None, 36)
+        restart_font = pygame.font.SysFont(None, SCORE_FONT_SIZE)
         continue_text = restart_font.render("ESC - продолжить", True, WHITE)
         quit_text = restart_font.render("Пробел - выход", True, WHITE)
         
@@ -323,13 +318,13 @@ class Tetris:
         else:
             winner = "ПРАВЫЙ" if self.left_player.game_over else "ЛЕВЫЙ"
             message = f"{winner} ИГРОК ПОБЕДИЛ"
-        game_over_font = pygame.font.SysFont(None, 64)  # Увеличили размер шрифта
+        game_over_font = pygame.font.SysFont(None, MESSAGE_FONT_SIZE)  # Увеличили размер шрифта
         message_text = game_over_font.render(message, True, WHITE)
         screen.blit(message_text, 
             (SCREEN_WIDTH // 2 - message_text.get_width() // 2, 
                 SCREEN_HEIGHT // 2 - message_text.get_height() // 2 - 100))
 
-        restart_font = pygame.font.SysFont(None, 36)
+        restart_font = pygame.font.SysFont(None, SCORE_FONT_SIZE)
         quit_text = restart_font.render("ESC - выход", True, WHITE)
         
         screen.blit(quit_text, (SCREEN_WIDTH // 2 - quit_text.get_width() // 2, 
@@ -347,7 +342,7 @@ class Tetris:
         self.draw_current_piece(self.right_player)
         
         # Рисуем счет
-        font = pygame.font.SysFont(None, 36)
+        font = pygame.font.SysFont(None, SCORE_FONT_SIZE)
         score_text = font.render(f"Счет: {self.left_player.score} - {self.right_player.score}", True, WHITE)
         screen.blit(score_text, (SCREEN_WIDTH // 2 - score_text.get_width() // 2, 10))
         
